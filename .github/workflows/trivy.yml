@@ -1,9 +1,7 @@
 name: Trivy
 on:
-  push:
-    branches: [appsec-lab9-ci"]
-  pull_request:
-    branches: ["master"]
+  push: { branches: [appsec-lab9-ci"] }
+  pull_request: { branches: ["master"] }
 
 jobs:
   trivy-fs:
@@ -32,26 +30,46 @@ jobs:
 
   trivy-image:
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('Dockerfile') != '' }}
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t app:ci .
-      - uses: aquasecurity/trivy-action@0.24.0
+
+      - name: check for Dockerfile
+        id: df
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: build image
+        if: ${{ steps.df.outputs.present == 'true' }}
+        run: docker build -t app:ci .
+
+      - name: trivy image sarif
+        if: ${{ steps.df.outputs.present == 'true' }}
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: app:ci
           format: sarif
           output: trivy-image.sarif
           severity: CRITICAL,HIGH,MEDIUM
-      - uses: aquasecurity/trivy-action@0.24.0
+
+      - name: trivy image html
+        if: ${{ steps.df.outputs.present == 'true' }}
+        uses: aquasecurity/trivy-action@0.24.0
         with:
           image-ref: app:ci
           format: template
           template: "@/contrib/html.tpl"
           output: trivy-image.html
           severity: CRITICAL,HIGH,MEDIUM
+
       - uses: actions/upload-artifact@v4
+        if: ${{ steps.df.outputs.present == 'true' }}
         with:
           name: trivy-image
           path: |
             trivy-image.sarif
             trivy-image.html
+
