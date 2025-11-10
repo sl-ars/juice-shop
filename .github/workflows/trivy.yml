@@ -1,0 +1,57 @@
+name: Trivy
+on:
+  push:
+    branches: [appsec-lab9-ci"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  trivy-fs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          format: sarif
+          output: trivy-sca.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          format: template
+          template: "@/contrib/html.tpl"
+          output: trivy-sca.html
+          severity: CRITICAL,HIGH,MEDIUM
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sca
+          path: |
+            trivy-sca.sarif
+            trivy-sca.html
+
+  trivy-image:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('Dockerfile') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t app:ci .
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: app:ci
+          format: sarif
+          output: trivy-image.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+      - uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: app:ci
+          format: template
+          template: "@/contrib/html.tpl"
+          output: trivy-image.html
+          severity: CRITICAL,HIGH,MEDIUM
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image
+          path: |
+            trivy-image.sarif
+            trivy-image.html
