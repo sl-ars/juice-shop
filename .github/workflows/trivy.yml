@@ -1,6 +1,6 @@
 name: Trivy
 on:
-  push: { branches: [appsec-lab9-ci"] }
+  push: { branches: ["appsec-lab9-ci"] }
   pull_request: { branches: ["master"] }
 
 jobs:
@@ -36,11 +36,7 @@ jobs:
       - name: check for Dockerfile
         id: df
         run: |
-          if [ -f Dockerfile ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
+          if [ -f Dockerfile ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
 
       - name: build image
         if: ${{ steps.df.outputs.present == 'true' }}
@@ -72,4 +68,3 @@ jobs:
           path: |
             trivy-image.sarif
             trivy-image.html
-
